@@ -1,4 +1,0 @@
-Arduino:
-- base shield x1
-- 101 x1
-Amazon Echo x1
