@@ -3,75 +3,76 @@ import numpy as np
 import math
 
 from PIL import Image
+# inspired by GeeksForGeeks' implementation
 
-#70 levels of gray
-greyscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^ `'. "
-greyscale2 = '@%#*+=-:. '
+#70 shades of gray
+shortScale = '@%#*+=-:. '
+longScale = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,\"^ `'. "
 
-def getAverageL(image):
+def calcAvgGrey(image):
     #return average grayscale value of an image
     im = np.array(image)#get as numpy array
-    w,h = im.shape
-    return np.average(im.reshape(w*h))
+    width, height = im.shape
+    return np.average(im.reshape(width * height))
 
 #import pdb; pdb.set_trace()
-def convertImageToAscii(fileName, cols, scale, moreLevels):
+def transformPicture(fileName, cols, scale, moreLevels):
     #return m*n list of images given image and dimensions (in rows and columns)
     # declare globals
     global gscale1, gscale2
     # open image and convert to grayscale
-    image = Image.open(fileName).convert('L') # store the image dimensions
-    W, H = image.size[0], image.size[1]
-    print("input image dims: %d x %d" % (W, H))
-    w = W/cols # compute tile width
+    picture = Image.open(fileName).convert('L') # store the image dimensions
+    width, height = picture.size[0], picture.size[1]
+    print("input image dims: %d x %d" % (width, height))
+    tile_width = width/cols # tile width
     # compute tile height based on the aspect ratio and scale of the font
-    h = w/scale
+    tile_height = tile_width/scale
     # compute number of rows to use in the final grid
-    rows = int(H/h)
+    rows = int(height/tile_height)
 
     print("cols: %d, rows: %d" % (cols, rows))
-    print("tile dims: %d x %d" % (w, h))
+    print("tile dims: %d x %d" % (tile_width, tile_height))
 
-    if cols > W or rows > H:
+    if cols > width or rows > height:
         print("Image too small for specified cols!")
         exit(0)
 
     # an ASCII image is a list of character strings
-    aimg = []
+    ascii_image = []
     # generate the list of tile dimensions
     for j in range(rows):
-        y1 = int(j*h)
-        y2 = int((j+1)*h)
+        yA = int(j*tile_height)
+        yB = int((j+1)*tile_height)
 
         # correct the last tile
         if j == rows-1:
-            y2 = H
+            yB = height
         # append an empty string
-        aimg.append("")
+        ascii_image.append("")
         for i in range(cols):
             # crop the image to fit the tile
-            x1 = int(i*w)
-            x2 = int((i+1)*w)
+            xA = int(i*tile_width)
+            xB = int((i+1)*tile_width)
             # correct the last tile
             if i == cols-1:
-                x2 = W
+                xB = height
             # crop the image to extract the tile into another Image object
-            img = image.crop((x1, y1, x2, y2))
+            img = picture.crop((xA, yA, xB, yB))
             # get the average luminance
-            avg = int(getAverageL(img))
+            avg_luminance = int(calcAvgGrey(img))
             # look up the ASCII character for grayscale value (avg)
             if moreLevels:
-                gsval = greyscale1[int((avg*69)/255)]
+                grey_shade = longScale[int((avg_luminance*69)/255)]
             else:
-                gsval = greyscale2[int((avg*9)/255)]
+                grey_shade = shortScale[int((avg_luminance*9)/255)]
                 # append the ASCII character to the string
-            aimg[j] += gsval
+            ascii_image[j] += grey_shade
     # return text image
-    return aimg
+    return ascii_image
 
 def main():
     #create parser
-    desc = "This program converts image into ASCII art."
+    desc = "This program transforms an image into an ASCII artwork."
     parser = argparse.ArgumentParser(description = desc)
     #add expected arguments
     parser.add_argument('--file', dest='imgFile', required=True)
@@ -80,13 +81,12 @@ def main():
     parser.add_argument('--cols', dest='cols', required=False)
     parser.add_argument('--morelevels', dest='moreLevels', action='store_true')
 
-    args = parser.parse_args()#parse arguments
+    args = parser.parse_args()#parse args
     imgFile = args.imgFile
     outFile = 'out.txt'
     if args.outFile:
         outFile = args.outFile
-    # set scale default as 0.43, which suits a courier font
-    scale = 0.43
+    scale = 0.43 #courier font
     if args.scale:
         scale = float(args.scale)
     #set cols
@@ -94,12 +94,14 @@ def main():
     if args.cols:
         cols = int(args.cols)
     print('Taking your image and making it nUmBeRs mY DooD')
-    aimg = convertImageToAscii(imgFile, cols, scale, args.moreLevels)
+    ascii_image = transformPicture(imgFile, cols, scale, args.moreLevels)
 
+    #method to write new image file to the output file
     f = open(outFile, 'w')
-    for row in aimg:
+    for row in ascii_image:
         f.write(row + '\n')
-    f.close()#clean up
+    f.close()
+    #confirmation that the file was written successfully
     print("ASCII art written to %s" % outFile)
 
 #call main
